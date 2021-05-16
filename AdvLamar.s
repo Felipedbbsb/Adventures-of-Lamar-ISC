@@ -151,7 +151,7 @@ PASSWORD:
 	Frame(1)				#Troca para frame 1
 	ImpressaoF(password1, 0xFF100000, 800, BARRA_SELEÇAO) #imagem com asterisco e vai para o teclado
 	BARRA_SELEÇAO:
-	Impressaopequena(Barra_seleçao, 0xFF00A53C, 0xFF10A53C, 0, 0x123, TECLADO_PASSWORD)#imprime a barra na seleÃ§ao da primeira letra
+	Impressaopequena(Barra_selecao, 0xFF00A53C, 0xFF10A53C, 0, 0x123, TECLADO_PASSWORD)#imprime a barra na seleÃ§ao da primeira letra
 
 #===========================================VALIDAÇAO SENHA=============
 VALIDADOR_SENHA:
@@ -187,21 +187,21 @@ SEGUNDA_LETRA:
 	play_sound(72, 1000, 120, 127)
 	apaga_cor(0xFF10A53C, 29 ,145,146, 0x123, IMPRIME_SEGUNDA)#apaga barra primeira letra(cor azul)
 	IMPRIME_SEGUNDA:
-		Impressaopequena(Barra_seleçao, 0xFF00A572, 0xFF10A572 0, 0x123, RECEBE_TECLA_PASSWORD)#imprime a barra na seleçao da segunda letra
+		Impressaopequena(Barra_selecao, 0xFF00A572, 0xFF10A572 0, 0x123, RECEBE_TECLA_PASSWORD)#imprime a barra na seleçao da segunda letra
 		
 TERCEIRA_LETRA:			#carrega display do KDMMIO, segunda letra
 	lw s3, 0xFF20000C 
 	play_sound(72, 1000, 120, 127)	
 	apaga_cor(0xFF10A572, 29 ,145,146, 0x123, IMPRIME_TERCEIRA)#apaga barra primeira letra(cor azul)
 	IMPRIME_TERCEIRA:
-		Impressaopequena(Barra_seleçao, 0xFF00A5A7, 0xFF10A5A7 0, 0x123, RECEBE_TECLA_PASSWORD)#imprime a barra na seleçao da terceira letra
+		Impressaopequena(Barra_selecao, 0xFF00A5A7, 0xFF10A5A7 0, 0x123, RECEBE_TECLA_PASSWORD)#imprime a barra na seleçao da terceira letra
 		
 QUARTA_LETRA:
 	lw s4, 0xFF20000C 	##carrega display do KDMMIO, terceira letra
 	play_sound(72, 1000, 120, 127)
 	apaga_cor(0xFF10A5A7, 29 ,145,146, 0x123, IMPRIME_QUARTA)#apaga barra primeira letra(cor azul)
 	IMPRIME_QUARTA:
-		Impressaopequena(Barra_seleçao, 0xFF00A5DC, 0xFF10A5DC, 0, 0x123, RECEBE_TECLA_PASSWORD)#imprime a barra na seleçao da quarta letra														
+		Impressaopequena(Barra_selecao, 0xFF00A5DC, 0xFF10A5DC, 0, 0x123, RECEBE_TECLA_PASSWORD)#imprime a barra na seleçao da quarta letra														
 #=================================TECLADO================================
 MENU_TROCAFRAME:
 	ImpressaoF(menu3,0xFF000000, 0, PROXIMO)
@@ -263,8 +263,10 @@ RETORNA2: ret
 
 .data
 
+POSICAO_LAMAR:  .word 0, 0	# o primeiro valor corresponde ao frame 0, o segundo ao frame 1. uso: 0(t0), 4(s0)
 VIDAS_LAMAR:	.word 5		# quando a ultima nota foi tocada
 POWER_LAMAR:	.word 0		# duracao da ultima nota
+ABRIR_BAU:      .word 0		#valor determinado para lamar abrir o bau com os powers
 
 #=============================================SOUNDTRACK==============================================================================
 #Jenova(tamanho:76)
@@ -376,9 +378,9 @@ beq, t1, t0, POWER1
 li t0, 2
 beq t1, t0, POWER2
 
-POWER0:poder_lamar(0, RETORNA_JR)
-POWER1:poder_lamar(1, RETORNA_JR)
-POWER2:poder_lamar(2, RETORNA_JR)
+POWER0:poder_lamar(0, VERIFICADOR_POWER)
+POWER1:poder_lamar(1, VERIFICADOR_POWER)
+POWER2:poder_lamar(2, VERIFICADOR_POWER)
 
 
 CORACAO_AUMENTA:
@@ -390,7 +392,25 @@ la t0,POWER_LAMAR	# endereÃ§o do VIDAS_LAMAR
 sw t1,0(t0)		# salva a vida do lamar diminuida
 j   CORACAO
 
-
+#verifica se lamar pegou todos os powers para abrir a caixa
+VERIFICADOR_POWER:
+	la t0, POWER_LAMAR
+	lw t1, 0(t0)
+	
+	la t0, ABRIR_BAU
+	lw t2, 0(t0)
+	
+	beq t2, t1, CAIXA_ABERTA_MAPA
+	j RETORNA_JR
+	
+	CAIXA_ABERTA_MAPA:
+		#s2 determina a fase que lamar esta
+	li t0, 1
+	beq s2, t0, CAIXA_ABERTA_MAPA1	 #abre bau primeira fase
+	li t0, 2
+	#beq s2, t0, CAIXA_ABERTA_MAPA2 #abre bau segunda fase
+	
+		
 RETORNA_JR:
 	jr s5
 #===============================MUSICAS=====================================
@@ -433,22 +453,31 @@ IMPRIME_FASE1:
 		
 
 IMPRIME_PERSONAGEM1:
-Impressaopequena(caixa, 0xFF008CA0, 0xFF108CA0, 0, 0x130, AEIOU2)
-AEIOU2:
-Impressaopequena(coracao, 0xFF0078E0, 0xFF1078E0, 0, 0x130, AEIOU)
-AEIOU:
+
+#==========Equivalendo valores de power=======
+la t0, ABRIR_BAU	# endereÃ§o do POWER_LAMAR
+
+li t1, 2		# <----------------------------------------------------------------------------DETERMINAR QUANTIDADE DE POWERS DA FASE
+	
+sw t1, 0(t0)		# salva o power do lamar minimo para abrir bau
+
 la t0,POWER_LAMAR	# endereÃ§o do POWER_LAMAR
 li t1, 0		#lamar começa com 0 de power sempre
-sw t1,0(t0)		# salva o power do lamar 
-jal s5, CORACAO
+sw t1,0(t0)		# salva o power do lamar 	
+
+#=============================================
+jal s5, CORACAO	
 Imprimepersonagem(0xFF008C20, 0xFF108C20, NEXT1)
 
 NEXT1:
 jal s5, MUSICA_RESET	#reseta os conatdores da musica, ela toca desde o inicio
 j ANDARLAMAR
 
+CAIXA_ABERTA_MAPA1:
+Impressaopequena(bauaberto,0xFF00DC50,0xFF10DC50, 0, 0x130, RETORNA_JR)
 #FASE2
 
+#======================================================================================================
 #======================================================================================================
 
 	
@@ -472,7 +501,7 @@ RECEBE_TECLA:
 	li t1,0xFF200000		# carrega o KDMMIO
 	lw t0,0(t1)			# Le bit de Controle Teclado
 	andi t0,t0,0x0001		# mascara o bit menos significativo
-   	beq t0,zero, RECEBE_TECLA  	   	# Se nÃ£o hÃ¡ tecla pressionada entÃ£o vai para Retorno(funÃ§a {RETORNA: ret} deve estar no final da pagina do arquivo)
+   	beq t0,zero, RECEBE_TECLA  	   	# Se n????o h???? tecla pressionada ent????o vai para Retorno(fun???¡ìa {RETORNA: ret} deve estar no final da pagina do arquivo)
    	lw t2,4(t1)  			# le o valor da tecla
    	li t3, 115			# ascii de "s"
    	li t4, 119			# ascii de "w" para verificar se foi pressionado
@@ -494,6 +523,8 @@ RECEBE_TECLA:
 			
 COLISAODIR:
 	li t1, 1630 # posicao do pixel a ser analisado a partir da posicao do lolo
+	la s0, POSICAO_LAMAR
+	lw s10, 0(s0)
 	add a6, s10, t1 # posicao do pixel a ser analisado
 	li t2, 30 #cor da caixa
 	li t3, 77 #cor do bau
@@ -528,32 +559,32 @@ CAIXADIR:
 	beq s6, t0, CAIXADIR2
 	j RECEBE_TECLA
 	
-CAIXADIR2:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, 1646 # Avalia a posicao futura da caixa / +16
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXADIR3
-	j RECEBE_TECLA
+	CAIXADIR2:
+		#mesma coisa do codigo de cima, porem analisa outro pixel
+		li s6, 0
+		li a6, 0
+		li t1, 1646 # Avalia a posicao futura da caixa / +16
+		add a6, s10, t1
+		li t0, 10
+		lb s6 0(a6)
+		beq s6, t0, CAIXADIR3
+		j RECEBE_TECLA
 
-CAIXADIR3:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, 3566 # Avalia a posicao futura da caixa / +16
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXADIR4
-	j RECEBE_TECLA
+		CAIXADIR3:
+			#mesma coisa do codigo de cima, porem analisa outro pixel
+			li s6, 0
+			li a6, 0
+			li t1, 3566 # Avalia a posicao futura da caixa / +16
+			add a6, s10, t1
+			li t0, 10
+			lb s6 0(a6)
+			beq s6, t0, CAIXADIR4
+			j RECEBE_TECLA
 	
-CAIXADIR4:
-	#Imprime a caixa +8 da posicao atual
-	#posicao atual da caixa = ( s10 + 8 ) + 16
-	j APAGADIR
+			CAIXADIR4:
+				#Imprime a caixa +8 da posicao atual
+				#posicao atual da caixa = ( s10 + 8 ) + 16
+				j APAGADIR
 
 CORACAODIR:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -566,9 +597,19 @@ CORACAODIR:
 	beq s6, t0, CORACAODIR2
 	j RECEBE_TECLA
 		
-CORACAODIR2:
-	jal s5, CORACAO_AUMENTA
-	j APAGACIMA
+	CORACAODIR2:
+		#Imprime meio chao no lugar do coracao:
+		li s6, 0
+		li a6, 0
+		li t1, 24
+		add a6, s10, t1
+		li t2, 0x100000
+		add s6, a6, t2
+		ImpressaopequenaC(meiochao, a6, s6, 0, 304, CORACAODIR3)
+
+		CORACAODIR3:
+			jal s5, CORACAO_AUMENTA
+			j APAGADIR
 	
 BAUDIR:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -581,12 +622,14 @@ BAUDIR:
 	beq s6, t0, BAUDIR2
 	j RECEBE_TECLA
 
-BAUDIR2:
-	#ESCREVA A FUNCAO DO BAU AQUI:
-	j APAGADIR
+		BAUDIR2:
+		#ESCREVA A FUNCAO DO BAU AQUI:
+		j APAGADIR
 	
 COLISAOESQ:
 	li t1, 963 # posicao do pixel a ser analisado a partir da posicao do lolo
+	la s0, POSICAO_LAMAR
+	lw s10, 0(s0)
 	add a6, s10, t1 # posicao do pixel a ser analisado
 	li t2, 30 # cor da caixa
 	li t3, 77 # cor do bau
@@ -622,32 +665,32 @@ CAIXAESQ:
 	beq s6, t0, CAIXAESQ2
 	j RECEBE_TECLA
 
-CAIXAESQ2:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, 947 # Avalia a posicao futura da caixa / -16
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXAESQ3
-	j RECEBE_TECLA
+	CAIXAESQ2:
+		#mesma coisa do codigo de cima, porem analisa outro pixel
+		li s6, 0
+		li a6, 0
+		li t1, 947 # Avalia a posicao futura da caixa / -16
+		add a6, s10, t1
+		li t0, 10
+		lb s6 0(a6)
+		beq s6, t0, CAIXAESQ3
+		j RECEBE_TECLA
 	
-CAIXAESQ3:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, 2867 # Avalia a posicao futura da caixa / -16
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXAESQ4
-	j RECEBE_TECLA 
+		CAIXAESQ3:
+			#mesma coisa do codigo de cima, porem analisa outro pixel
+			li s6, 0
+			li a6, 0
+			li t1, 2867 # Avalia a posicao futura da caixa / -16
+			add a6, s10, t1
+			li t0, 10
+			lb s6 0(a6)
+			beq s6, t0, CAIXAESQ4
+			j RECEBE_TECLA 
 	
-CAIXAESQ4:
-	#Imprime a caixa -8 da posicao atual
-	#posicao atual da caixa = ( s10 + 8 ) - 16
-	j APAGAESQ
+			CAIXAESQ4:
+				#Imprime a caixa -8 da posicao atual
+				#posicao atual da caixa = ( s10 + 8 ) - 16
+				j APAGAESQ
 	
 CORACAOESQ:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -660,9 +703,19 @@ CORACAOESQ:
 	beq s6, t0, CORACAOESQ2
 	j RECEBE_TECLA
 	
-CORACAOESQ2:
-	jal s5, CORACAO_AUMENTA
-	j APAGACIMA
+	CORACAOESQ2:
+		#Imprime meio chao no lugar do coracao:
+		li s6, 0
+		li a6, 0
+		li t1, -8
+		add a6, s10, t1
+		li t2, 0x100000
+		add s6, a6, t2
+		ImpressaopequenaC(meiochao, a6, s6, 0, 304, CORACAOESQ3)
+
+		CORACAOESQ3:		
+			jal s5, CORACAO_AUMENTA
+			j APAGAESQ
 
 BAUESQ:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -675,12 +728,14 @@ BAUESQ:
 	beq s6, t0, BAUESQ2
 	j RECEBE_TECLA
 	
-BAUESQ2:
-	#ESCREVA A FUNCAO DO BAU AQUI:
-	j APAGAESQ
+	BAUESQ2:
+		#ESCREVA A FUNCAO DO BAU AQUI:
+		j APAGAESQ
 	
 COLISAOCIMA:
 	li t1, -1909  # posicao do pixel a ser analisado a partir da posicao do lolo
+	la s0, POSICAO_LAMAR
+	lw s10, 0(s0)
 	add a6, s10, t1 # posicao do pixel a ser analisado
 	li t2, 30 #cor da caixa
 	li t3, 77 #cor do bau
@@ -715,32 +770,32 @@ CAIXACIMA:
 	beq s6, t0, CAIXACIMA2
 	j RECEBE_TECLA
 	
-CAIXACIMA2:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, -7029 #avalia a posicao futura da caixa / -5120
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXACIMA3
-	j RECEBE_TECLA
+	CAIXACIMA2:
+		#mesma coisa do codigo de cima, porem analisa outro pixel
+		li s6, 0
+		li a6, 0
+		li t1, -7029 #avalia a posicao futura da caixa / -5120
+		add a6, s10, t1
+		li t0, 10
+		lb s6 0(a6)
+		beq s6, t0, CAIXACIMA3
+		j RECEBE_TECLA
 	
-CAIXACIMA3:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, -7022 #avalia a posicao futura da caixa / -5120
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXACIMA4
-	j RECEBE_TECLA
+		CAIXACIMA3:
+			#mesma coisa do codigo de cima, porem analisa outro pixel
+			li s6, 0
+			li a6, 0
+			li t1, -7022 #avalia a posicao futura da caixa / -5120
+			add a6, s10, t1
+			li t0, 10
+			lb s6 0(a6)
+			beq s6, t0, CAIXACIMA4
+			j RECEBE_TECLA
 
-CAIXACIMA4:
-	#Imprime a caixa -2560 da posicao atual
-	#posicao atual da caixa = ( s10 + 8 ) - 5120
-	j APAGACIMA
+			CAIXACIMA4:
+				#Imprime a caixa -2560 da posicao atual
+				#posicao atual da caixa = ( s10 + 8 ) - 5120
+				j APAGACIMA
 
 CORACAOCIMA:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -753,9 +808,19 @@ CORACAOCIMA:
 	beq s6, t0, CORACAOCIMA2
 	j RECEBE_TECLA	
 	
-CORACAOCIMA2:
-	jal s5, CORACAO_AUMENTA
-	j APAGACIMA
+	CORACAOCIMA2:
+		#Imprime meio chao no lugar do coracao:
+		li s6, 0
+		li a6, 0
+		li t1, -5112
+		add a6, s10, t1
+		li t2, 0x100000
+		add s6, a6, t2
+		ImpressaopequenaC(meiochao, a6, s6, 0, 304, CORACAOCIMA3)
+		
+		CORACAOCIMA3:
+			jal s5, CORACAO_AUMENTA
+			j APAGACIMA
 	
 BAUCIMA:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -775,6 +840,8 @@ BAUCIMA2:
 																															
 COLISAOBAIXO:
 	li t1, 5771 # posicao do pixel a ser analisado a partir da posicao do lolo
+	la s0, POSICAO_LAMAR
+	lw s10, 0(s0)
 	add a6, s10, t1 # posicao do pixel a ser analisado
 	li t2, 30 #cor da caixa
 	li t3, 77 #cor do bau
@@ -809,32 +876,32 @@ CAIXABAIXO:
 	beq s6, t0, CAIXABAIXO2
 	j RECEBE_TECLA
 	
-CAIXABAIXO2:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, 10891 #avalia a posicao futura da caixa / +5120
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXABAIXO3
-	j RECEBE_TECLA
+	CAIXABAIXO2:
+		#mesma coisa do codigo de cima, porem analisa outro pixel
+		li s6, 0
+		li a6, 0
+		li t1, 10891 #avalia a posicao futura da caixa / +5120
+		add a6, s10, t1
+		li t0, 10
+		lb s6 0(a6)
+		beq s6, t0, CAIXABAIXO3
+		j RECEBE_TECLA
 	
-CAIXABAIXO3:
-	#mesma coisa do codigo de cima, porem analisa outro pixel
-	li s6, 0
-	li a6, 0
-	li t1, 10898 #avalia a posicao futura da caixa / +5120
-	add a6, s10, t1
-	li t0, 10
-	lb s6 0(a6)
-	beq s6, t0, CAIXABAIXO4
-	j RECEBE_TECLA
+		CAIXABAIXO3:
+			#mesma coisa do codigo de cima, porem analisa outro pixel
+			li s6, 0
+			li a6, 0
+			li t1, 10898 #avalia a posicao futura da caixa / +5120
+			add a6, s10, t1
+			li t0, 10
+			lb s6 0(a6)
+			beq s6, t0, CAIXABAIXO4
+			j RECEBE_TECLA
 	
-CAIXABAIXO4:
-	#Imprime a caixa +2560 da posicao atual
-	#posicao atual da caixa = ( s10 + 8 ) + 5120
-	j APAGABAIXO
+			CAIXABAIXO4:
+				#Imprime a caixa +2560 da posicao atual
+				#posicao atual da caixa = ( s10 + 8 ) + 5120
+				j APAGABAIXO
 		
 CORACAOBAIXO:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -847,9 +914,19 @@ CORACAOBAIXO:
 	beq s6, t0, CORACAOBAIXO2
 	j RECEBE_TECLA
 	
-CORACAOBAIXO2:
-	jal s5, CORACAO_AUMENTA
-	j APAGACIMA
+	CORACAOBAIXO2:
+		##jal s5, CORACAO
+		li s6, 0
+		li a6, 0
+		li t1, 5128
+		add a6, s10, t1
+		li t2, 0x100000
+		add s6, a6, t2
+		ImpressaopequenaC(meiochao, a6, s6, 0, 304, CORACAOBAIXO3)
+		
+		CORACAOBAIXO3:
+			jal s5, CORACAO_AUMENTA
+			j APAGABAIXO
 
 BAUBAIXO:
 	#mesma coisa do codigo de cima, porem analisa outro pixel
@@ -862,20 +939,20 @@ BAUBAIXO:
 	beq s6, t0, BAUBAIXO2
 	j RECEBE_TECLA
 	
-BAUBAIXO2:
-	#ESCREVA A FUNCAO DO BAU AQUI:
-	j APAGABAIXO
+	BAUBAIXO2:
+		#ESCREVA A FUNCAO DO BAU AQUI:
+		j APAGABAIXO
 			
 
 APAGADIR:
 Apagachao(8)
 
 ANDA_DIR:
-Anda(lamardir_walk)	#Sprite andando para animação
-Trocaframe(65)		#Delay mínimo para que a animação possa ser vista
-Apagachao(0)		#Apaga a sprite para não ocorrer sobreposição
+Anda(lamardir_walk)	#Sprite andando para anima?¡ì??o
+Trocaframe(65)		#Delay m??nimo para que a anima?¡ì??o possa ser vista
+Apagachao(0)		#Apaga a sprite para n??o ocorrer sobreposi?¡ì??o
 Anda(lamardir)		#Sprite parado novamente
-Trocaframe(65)		#Delay mínimo para que a animação possa ser vista
+Trocaframe(65)		#Delay m??nimo para que a anima?¡ì??o possa ser vista
 j INC	
 	
 
@@ -919,14 +996,14 @@ j INC
 RETORNA:ret			
 
 
-#=========================================================================																					
+#=========================================================================																							
 																												
 																																										
 .data
 
 #MAPAS
 .include "./Imagens/MAPA1.data"
-
+.include "./Imagens/MAPA2.data"
 #Transiçao
 .include "./Imagens/Transicao1.data"
 .include "./Imagens/Transicao2.data"
@@ -974,14 +1051,14 @@ RETORNA:ret
 #Imagens incluidas na intrface de password
 .include "./Imagens/password1.data"
 .include "./Imagens/password2.data"
-.include "./Imagens/Barra_seleçao.data"
+.include "./Imagens/Barra_selecao.data"
 
 .include "./Imagens/meiochao.data"	
 
 #itens mapa																																																																																																																														
 .include "./Imagens/caixa.data"
 .include "./Imagens/coracao.data"
-																																																																																																																																																																		
+.include "./Imagens/bauaberto.data"																																																																																																																																																																		
 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																			
 .text	
 																									
