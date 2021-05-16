@@ -16,26 +16,26 @@ MUSIC_NUM:	.word %tamanho	# total de notas
 
 .text
 
-M_LOOP:	jal PLAY		# tocar m˙sica
+M_LOOP:	jal PLAY		# tocar m√∫sica
 	
 	
 	
 	j FIM			# continuar main loop
 
-PLAY:	la t1,LAST_PLAYED	# endereÁo do last played
+PLAY:	la t1,LAST_PLAYED	# endere√ßo do last played
 	lw t1,0(t1)		# t1 = last played
-	beq t1,zero,P_CONT	# if last played == 0 THEN continue loop (primeira ocorrÍncia)
+	beq t1,zero,P_CONT	# if last played == 0 THEN continue loop (primeira ocorr√™ncia)
 
 	li a7,30		# define o syscall Time
 	ecall			# time
-	la t0,LAST_DURATION	# endereÁo da last duration
+	la t0,LAST_DURATION	# endere√ßo da last duration
 	lw t0,0(t0)		# t0 = duracao da ultima nota
 	sub t1,a0,t1		# t1 = agora - quando a ultima nota foi tocada (quanto tempo passou desde a ultima nota tocada)
 	bge t1,t0,P_CONT	# if t1 >= last duration THEN continue loop (se o tempo que passou for maior que a duracao da nota, toca a proxima nota)
 	ret			# retorna ao main loop
 
 P_CONT:	bne s4,s3,P_NOTE	# if s4 != s3 THEN toca a proxima nota
-	jal a0, RESTART		# reseta os valores padrıes (a musica vai ficar tocando num loop) (define o valor de retorno em a0)
+	jal a0, RESTART		# reseta os valores padr√µes (a musica vai ficar tocando num loop) (define o valor de retorno em a0)
 	ret			# volta ao main loop
 
 P_NOTE:	lw a0,0(s11)		# le o valor da nota
@@ -43,24 +43,24 @@ P_NOTE:	lw a0,0(s11)		# le o valor da nota
 	li a7,31		# define a chamada de syscall
 	ecall			# toca a nota
 	
-	la t0,LAST_DURATION	# endereÁo da last duration
+	la t0,LAST_DURATION	# endere√ßo da last duration
 	sw a1,0(t0)		# salva a duracao da nota atual no last duration
 
 	li a7,30		# define o syscall Time
 	ecall			# time
-	la t0,LAST_PLAYED	# endereÁo do last played
+	la t0,LAST_PLAYED	# endere√ßo do last played
 	sw a0,0(t0)		# salva o instante atual no last played
 
-	addi s11,s11,8		# incrementa para o endereÁo da prÛxima nota
+	addi s11,s11,8		# incrementa para o endere√ßo da pr√≥xima nota
 	addi s4,s4,1		# incrementa o contador de notas
 	ret			# volta ao main loop
 
-# define os valores padrıes
+# define os valores padr√µes
 
 RESTART:li s4,0			# reseta contador notas 
-	 la t0,MUSIC_NUM		# endereÁo do total de notas
+	 la t0,MUSIC_NUM		# endere√ßo do total de notas
 	 lw s3,0(t0)		# total de notas
-	 la s11,%musica	        # endereÁo das notas
+	 la s11,%musica	        # endere√ßo das notas
 	 li a2,%instrumento	# instrumento
 	 li a3,100		# volume
 	 jr a0			# volta a quem chamou
@@ -100,7 +100,7 @@ li a0,%a0	#nota
 li a1,%a1	#time
 li a2,%a2	#instrumento
 li a3,%a3	#volume
-li a7,31
+li a7,33
 ecall
 .end_macro
 
@@ -108,10 +108,10 @@ ecall
 .macro reset()
 	li s3,0
 	li s4,0			# reseta contador notas (midi) 
-	la t0,LAST_DURATION	# endereÁo da last duration
+	la t0,LAST_DURATION	# endere√ßo da last duration
 	sw zero,0(t0)		#reseta para zero o valor
 	
-	la t0,LAST_PLAYED	# endereÁo do last played
+	la t0,LAST_PLAYED	# endere√ßo do last played
 	sw zero,0(t0)		#reseta para zero o valor
 .end_macro
 #================================================================
